@@ -1,9 +1,9 @@
-# Pipeline Repository
-Welcome to the pipeline repository! This repository provides a modular framework for running complex computational pipelines, with a focus on flexibility and ease of use. Each module is independent and can be installed with its own environment, allowing users to install only what they need for their specific workflow.
+# PathLine Repository
+Welcome to the PathLine repository! This repository provides a modular framework for running complex computational pathology pipelines, with a focus on flexibility and ease of use. Each module is independent and can be installed with its own environment, allowing users to install only what they need for their specific workflow.
 
 ## Repository Structure
 ```
-pipeline-repo/
+PathLine/
 ├── pipeline.sh                # Main bash-based pipeline script
 ├── modules/
 │   ├── module1/
@@ -25,8 +25,8 @@ pipeline-repo/
 ## Getting Started
 1. Clone the repository:
    ```bash
-   git clone https://github.com/yourusername/pipeline-repo.git
-   cd pipeline-repo
+   git clone https://github.com/LUMCPathAI/PathLine.git
+   cd PathLine
    ```
 
 2. Run the setup script to install modules:
