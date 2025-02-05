@@ -1,156 +1,149 @@
-# PathLine Repository
-Welcome to the PathLine repository! This repository provides a modular framework for running complex computational pathology pipelines, with a focus on flexibility and ease of use. Each module is independent and can be installed with its own environment, allowing users to install only what they need for their specific workflow.
+# **PathLine Repository**
+Welcome to the **PathLine** repository! This repository provides a **modular framework** for running **computational pathology pipelines**, designed for **flexibility and ease of use**. Each module is independent and can be installed separately, with its **own local environment** stored under `PathLine/envs/`, ensuring reproducibility and minimal dependency conflicts.
 
-## Repository Structure
+---
+
+## **📂 Repository Structure**
 ```
 PathLine/
-├── pipeline.sh                # Main bash-based pipeline script
-├── modules/
-│   ├── module1/
-│   │   ├── install.sh         # Installation script for module1
-│   │   ├── requirements.txt   # Dependencies for module1 (if Python-based)
-│   │   ├── Dockerfile         # Optional: Dockerfile for module1
-│   │   ├── script1.py         # Scripts or executables for module1
-│   │   └── README.md          # Documentation for module1
-│   ├── module2/
-│   │   ├── install.sh         # Installation script for module2
-│   │   ├── requirements.txt   # Dependencies for module2
-│   │   ├── Dockerfile         # Optional: Dockerfile for module2
-│   │   ├── script2.py
-│   │   └── README.md
-├── README.md                  # General documentation
-└── setup.sh                   # Setup script for the overarching pipeline
+├── pipeline.sh                # Main pipeline execution script
+├── setup.sh                   # Script to install selected modules
+├── config.json                # Global configuration file for the pipeline
+├── envs/                       # Directory for storing virtual environments
+│   ├── tile_extractor/         # Environment for tile extractor
+│   ├── nuclei_segmentor/       # Environment for nuclei segmentor
+│   └── nuclei_graph_constructor/ # Environment for graph constructor
+├── modules/                   # Directory containing pipeline modules
+│   ├── tile_extractor/         # Tile extraction module
+│   │   ├── install.sh          # Installation script for dependencies
+│   │   ├── run.sh              # Script to run the module
+│   │   ├── extract_tiles.py    # Main script for tile extraction
+│   │   ├── requirements.txt    # Python dependencies
+│   │   ├── README.md           # Documentation
+│   ├── nuclei_segmentor/       # Nuclei segmentation module
+│   │   ├── install.sh
+│   │   ├── run.sh
+│   │   ├── segment_nuclei.py
+│   │   ├── requirements.txt
+│   │   ├── README.md
+│   ├── nuclei_graph_constructor/ # Graph construction module
+│   │   ├── install.sh
+│   │   ├── run.sh
+│   │   ├── construct_graph.py
+│   │   ├── requirements.txt
+│   │   ├── README.md
+└── README.md                  # General documentation
 ```
 
-## Getting Started
-1. Clone the repository:
-   ```bash
-   git clone https://github.com/LUMCPathAI/PathLine.git
-   cd PathLine
-   ```
+---
 
-2. Run the setup script to install modules:
-   ```bash
-   bash setup.sh
-   ```
-   - You can choose to install all modules or select specific ones based on your needs.
+## **🚀 Getting Started**
 
-3. Run the main pipeline script:
-   ```bash
-   bash pipeline.sh [module_name]
-   ```
-   - Example: `bash pipeline.sh module1`
+### **1️⃣ Clone the repository**
+```bash
+git clone https://github.com/LUMCPathAI/PathLine.git
+cd PathLine
+```
 
-## Overarching Pipeline Script
-The `pipeline.sh` script dynamically runs the selected module. Below is the content of the script:
+### **2️⃣ Install the required modules**
+Run the **setup script** to install selected modules.
 
+#### **Install all modules**
+```bash
+bash setup.sh
+```
+
+#### **Install specific modules**
+```bash
+bash setup.sh tile_extractor nuclei_segmentor
+```
+Environments for each module will be stored in **`PathLine/envs/`**.
+
+### **3️⃣ Run the pipeline**
+Execute specific modules in sequence using `pipeline.sh`.
+
+#### **Example: Running multiple modules**
+```bash
+bash pipeline.sh tile_extractor nuclei_segmentor nuclei_graph_constructor
+```
+- **Each module receives the same `config.json` as input** and writes relevant output paths to a shared pipeline output file.
+- The pipeline logs will be saved in `pipeline_{timestamp}.output`.
+
+---
+
+## **📜 Global Configuration (`config.json`)**
+PathLine uses a **centralized configuration file** (`config.json`), which is passed to each module. This **ensures consistency** across all steps.
+
+### **Example `config.json`**
+```json
+{
+  "modules": {
+    "tile_extractor": {
+      "slide_dirs": ["/path/to/slides1", "/path/to/slides2"],
+      "annotation_file": "/path/to/annotation_file",
+      "output_dir": "/path/to/output_dir",
+      "tile_size": 256,
+      "tile_um": "20x",
+      "project_dir": "/path/to/project"
+    },
+    "nuclei_segmentor": {
+      "output_dir": "/path/to/output_dir",
+      "checkpoint": "/path/to/checkpoint"
+    },
+    "nuclei_graph_constructor": {
+      "output_dir": "/path/to/output_dir"
+    }
+  }
+}
+```
+Each module reads only its **own parameters** from this file.
+
+---
+
+## **🔹 Running the Pipeline (`pipeline.sh`)**
+This script **executes multiple modules sequentially** using the **same configuration file**.
+
+### **Script**
 ```bash
 #!/bin/bash
 
 # Usage information
 usage() {
-    echo "Usage: $0 [module_name]"
-    echo "Example: $0 module1"
+    echo "Usage: $0 module1 module2 ..."
     exit 1
 }
 
-# Check if a module is passed
+# Ensure at least one module is provided
 if [ $# -eq 0 ]; then
     usage
 fi
 
-MODULE=$1
+# Generate timestamped output file
+TIMESTAMP=$(date +"%Y%m%d_%H%M%S")
+OUTPUT_FILE="pipeline_${TIMESTAMP}.output"
 
-# Check if the module exists and run it
-if [ -d "modules/$MODULE" ]; then
-    echo "Running $MODULE..."
-    bash modules/$MODULE/run.sh
-else
-    echo "Module $MODULE not found!"
-    exit 1
-fi
-```
+echo "[INFO] Pipeline output will be saved to $OUTPUT_FILE"
+touch "$OUTPUT_FILE"
 
-## Setup Script for Installing Modules
-The `setup.sh` script allows users to install specific modules or all modules:
-
-```bash
-#!/bin/bash
-
-echo "Setting up the pipeline repository..."
-
-# List available modules
-echo "Available modules:"
-for module in modules/*; do
-    if [ -d "$module" ]; then
-        echo "- $(basename $module)"
+# Iterate over all provided modules
+for MODULE in "$@"; do
+    if [ -d "modules/$MODULE" ]; then
+        echo "[INFO] Running $MODULE..."
+        bash "modules/$MODULE/run.sh" "config.json" "$OUTPUT_FILE"
+    else
+        echo "[ERROR] Module $MODULE not found!"
+        exit 1
     fi
 done
 
-# Prompt user for installation
-read -p "Do you want to install all modules? (y/n): " choice
-if [ "$choice" == "y" ]; then
-    for module in modules/*; do
-        if [ -d "$module" ]; then
-            bash "$module/install.sh"
-        fi
-    done
-else
-    echo "Enter module names to install (space-separated):"
-    read -a modules_to_install
-    for module in "${modules_to_install[@]}"; do
-        if [ -d "modules/$module" ]; then
-            bash "modules/$module/install.sh"
-        else
-            echo "Module $module not found!"
-        fi
-    done
-fi
-
-echo "Pipeline setup completed."
+echo "[INFO] Pipeline completed successfully."
 ```
 
-## Example Individual Module
-Each module should contain its own `install.sh` script for environment setup. Below is an example for `module1`:
+---
 
-**`modules/module1/install.sh`:**
-```bash
-#!/bin/bash
-
-# Installation script for module1
-echo "Installing module1..."
-
-# Check if Conda is installed
-if command -v conda &> /dev/null; then
-    conda create -n module1-env python=3.8 -y
-    conda activate module1-env
-    pip install -r requirements.txt
-elif command -v python3 &> /dev/null; then
-    python3 -m venv module1-env
-    source module1-env/bin/activate
-    pip install -r requirements.txt
-else
-    echo "No supported environment manager found. Install Conda or Python3."
-    exit 1
-fi
-
-echo "module1 installed successfully."
-```
-
-## Adding New Modules
-1. Create a new directory under `modules/` with the module name.
-2. Add an `install.sh` script for environment setup.
-3. Include a `requirements.txt` (if needed) and optionally a `Dockerfile`.
-4. Write the main functionality in your preferred scripting language (e.g., Python, R).
-5. Document your module in a `README.md` inside the module folder.
-
-## Best Practices
-- Use version control (e.g., Git) to track changes in the pipeline and modules.
-- Add automated testing to ensure pipeline and module functionality.
-- Include license information in the repository.
-- Follow consistent coding standards across modules.
-- Use environment management tools like Conda for reproducibility.
-
-## Contribution
-We welcome contributions! Please fork the repository and submit a pull request with your changes. If adding a new module, ensure it follows the structure outlined above.
-
+## **✅ Summary**
+- **`setup.sh`** installs selected modules.
+- **`pipeline.sh`** executes multiple modules in order.
+- **Each module has** its own `install.sh` and `run.sh`.
+- **Configurations are centrally managed** via `config.json`.
+- **Environments are stored in** `PathLine/envs/`.
