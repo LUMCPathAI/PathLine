@@ -1,0 +1,19 @@
+{
+    "modules": {
+        "tile_extractor": {
+            "slide_dirs": ["/path/to/slides1", "/path/to/slides2"],
+            "annotation_file": "/path/to/annotation_file",
+            "output_dir": "/path/to/output_dir",
+            "tile_size": 256,
+            "tile_um": "20x",
+            "project_dir": "/path/to/project"
+        },
+        "nuclei_segmentor": {
+            "output_dir": "/path/to/output_dir",
+            "checkpoint": "/path/to/checkpoint"
+        },
+        "nuclei_graph_constructor": {
+            "output_dir": "/path/to/output_dir"
+        }
+    }
+}

@@ -1,0 +1,3 @@
+slideflow[torch]
+cucim
+cupy-cuda11x
